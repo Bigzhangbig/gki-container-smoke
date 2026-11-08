@@ -1,0 +1,23 @@
+name: Container Smoke
+
+# 跨仓库实测：在另一个仓库的容器作业里匿名拉取 gki-kernel-build（包已 Public）。
+# 成功 = 镜像可被任意仓库的 container 作业引用（无需凭据、无需 PAT）。
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    container: ghcr.io/bigzhangbig/gki-kernel-build:latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Verify image toolchain
+        run: |
+          set -euo pipefail
+          echo "container smoke: $(cat /etc/os-release | head -1)"
+          for cmd in gcc make python ccache git gh apksigner aarch64-linux-gnu-objcopy pixz zstd rsync ssh; do
+            command -v "$cmd" || { echo "missing: $cmd" >&2; exit 1; }
+          done
+          echo "TOOLCHAIN-OK: $(python --version | cut -d' ' -f1) + $(ccache --version | cut -d' ' -f1)"
